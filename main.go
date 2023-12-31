@@ -20,7 +20,10 @@ import (
 )
 
 func main() {
-	customOs := "os.bin"
+	if len(os.Args) != 2 {
+		log.Fatalf("Usage: %s <path to os.bin>", os.Args[0])
+	}
+	customOs := os.Args[1]
 
 	list, err := enumerator.GetDetailedPortsList()
 	if err != nil {
@@ -36,7 +39,7 @@ func main() {
 		log.Fatalf("Could not find Harmony device")
 	}
 	port, err := serial.Open(details.Name, &serial.Mode{
-		BaudRate: 2400,
+		BaudRate: 1200,
 	})
 	if err != nil {
 		log.Fatalf("Could not open port: %s", err)
@@ -332,6 +335,7 @@ func ReplaceOsInTar(r io.Reader, w io.Writer, osBin []byte) error {
 				}
 				md5sum := md5.Sum(osBin)
 				osMap["md5sum"] = hex.EncodeToString(md5sum[:])
+				fmt.Printf("os.bin md5 sum: %s\n", osMap["md5sum"])
 				versionFixed, err := json.MarshalIndent(version, "", "    ")
 				if err != nil {
 					return err
