@@ -11,9 +11,15 @@ It then uses the same process that [Mudita Center](https://github.com/mudita/mud
 
 ## Usage
 
+Install:
+```
+go install github.com/mdehoog/MuditaHarmonyFlasher@latest
+```
+
 Building `os.bin`:
 ```
 git clone --recurse-submodules git@github.com:mudita/MuditaOS.git
+cd MuditaOS
 docker pull wearemudita/mudita_os_builder:latest
 docker run --platform linux/amd64 --entrypoint bash -it -v $(pwd):/mnt wearemudita/mudita_os_builder:latest
 cd /mnt
@@ -23,7 +29,8 @@ mkdir -p sysroot/system_a/bin
 make BellHybrid-boot.bin
 ```
 
-Flashing `os.bin`:
+In a separate terminal (outside Docker):
 ```
-go run github.com/mdehoog/MuditaHarmonyFlasher ./build-BellHybrid-rt1051-Release/sysroot/system_a/bin/os.bin
+cd MuditaOS
+MuditaHarmonyFlasher ./build-BellHybrid-rt1051-Release/sysroot/system_a/bin/os.bin
 ```
