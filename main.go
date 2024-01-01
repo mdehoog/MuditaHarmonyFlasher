@@ -115,6 +115,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Could not read custom OS file: %s", err)
 	}
+	fmt.Printf("Patching update file with custom OS: %s\n", customOs)
 	var newTar bytes.Buffer
 	err = ReplaceOsInTar(bytes.NewBuffer(oldTar), &newTar, customOsBuffer)
 	if err != nil {
@@ -170,7 +171,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Could not make upload request: %s", err)
 	}
-	fmt.Printf("Upload response: %+v\n", uploadResp)
 
 	bar := progressbar.DefaultBytes(int64(len(update)), "Uploading")
 	chunks := (len(update) + uploadResp.ChunkSize - 1) / uploadResp.ChunkSize
@@ -199,7 +199,7 @@ func main() {
 	}
 
 	// update + reboot
-	fmt.Printf("Updating and rebooting, please wait...\n")
+	fmt.Printf("Validating image, please wait 1-2 minutes...\n")
 	err = request(port, map[string]interface{}{
 		"endpoint": 2,
 		"method":   2,
@@ -211,7 +211,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error updating and rebooting: %s", err)
 	}
-	fmt.Printf("Done, please do not unplug your device")
+	fmt.Printf("Rebooting, please wait for your device to update\n")
 }
 
 type response struct {
@@ -345,7 +345,7 @@ func ReplaceOsInTar(r io.Reader, w io.Writer, osBin []byte) error {
 				}
 				md5sum := md5.Sum(osBin)
 				osMap["md5sum"] = hex.EncodeToString(md5sum[:])
-				fmt.Printf("os.bin md5 sum: %s\n", osMap["md5sum"])
+				fmt.Printf("Replacing os.bin (md5 sum: %s)\n", osMap["md5sum"])
 				versionFixed, err := json.MarshalIndent(version, "", "    ")
 				if err != nil {
 					return err
