@@ -14,11 +14,14 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/schollz/progressbar/v3"
 	"go.bug.st/serial"
 	"go.bug.st/serial/enumerator"
 )
+
+const defaultReadTimeout = 5 * time.Second
 
 func main() {
 	if len(os.Args) != 2 {
@@ -50,7 +53,7 @@ func main() {
 	}()
 
 	var di deviceInformation
-	err = request(port, map[string]interface{}{
+	err = request(port, defaultReadTimeout, map[string]interface{}{
 		"endpoint": 1,
 		"method":   1,
 	}, &di)
@@ -127,7 +130,7 @@ func main() {
 		log.Fatalf("Device has not completed onboarding")
 	}
 
-	err = request(port, map[string]interface{}{
+	err = request(port, defaultReadTimeout, map[string]interface{}{
 		"endpoint": 3,
 		"method":   4,
 		"body": map[string]interface{}{
@@ -159,7 +162,7 @@ func main() {
 	crc := crc32.Checksum(update, table)
 
 	var uploadResp fileUpload
-	err = request(port, map[string]interface{}{
+	err = request(port, defaultReadTimeout, map[string]interface{}{
 		"endpoint": 3,
 		"method":   3,
 		"body": map[string]interface{}{
@@ -184,7 +187,7 @@ func main() {
 		}
 		chunk := update[i*uploadResp.ChunkSize : end]
 		err = bar.Add(len(chunk))
-		err = request(port, map[string]interface{}{
+		err = request(port, defaultReadTimeout, map[string]interface{}{
 			"endpoint": 3,
 			"method":   3,
 			"body": map[string]interface{}{
@@ -200,7 +203,7 @@ func main() {
 
 	// update + reboot
 	fmt.Printf("Validating image, please wait 1-2 minutes...\n")
-	err = request(port, map[string]interface{}{
+	err = request(port, 10*time.Minute, map[string]interface{}{
 		"endpoint": 2,
 		"method":   2,
 		"body": map[string]interface{}{
@@ -260,7 +263,7 @@ type fileUpload struct {
 	TxID      int `json:"txID"`
 }
 
-func request(port serial.Port, payload map[string]interface{}, v any) error {
+func request(port serial.Port, timeout time.Duration, payload map[string]interface{}, v any) error {
 	buf, err := json.Marshal(payload)
 	if err != nil {
 		return err
@@ -282,6 +285,10 @@ func request(port serial.Port, payload map[string]interface{}, v any) error {
 		return err
 	}
 	buffer = make([]byte, length)
+	err = port.SetReadTimeout(timeout)
+	if err != nil {
+		return err
+	}
 	_, err = io.ReadFull(port, buffer)
 	if err != nil {
 		return err
