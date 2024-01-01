@@ -15,6 +15,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/schollz/progressbar/v3"
 	"go.bug.st/serial"
 	"go.bug.st/serial/enumerator"
 )
@@ -92,7 +93,8 @@ func main() {
 		defer func() {
 			_ = out.Close()
 		}()
-		_, err = io.Copy(out, resp.Body)
+		bar := progressbar.DefaultBytes(resp.ContentLength, "Downloading")
+		_, err = io.Copy(io.MultiWriter(out, bar), resp.Body)
 		if err != nil {
 			log.Fatalf("Could not download update file: %s", err)
 		}
@@ -166,9 +168,13 @@ func main() {
 	}
 	fmt.Printf("Upload response: %+v\n", uploadResp)
 
+	bar := progressbar.DefaultBytes(int64(len(update)), "Uploading")
 	chunks := (len(update) + uploadResp.ChunkSize - 1) / uploadResp.ChunkSize
 	for i := 0; i < chunks; i++ {
-		fmt.Printf("Uploading chunk %d of %d\n", i+1, chunks)
+		err = bar.Add(uploadResp.ChunkSize)
+		if err != nil {
+			log.Fatalf("Error updating progress bar: %s", err)
+		}
 		end := (i + 1) * uploadResp.ChunkSize
 		if end > len(update) {
 			end = len(update)
