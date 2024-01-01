@@ -57,7 +57,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Could not make request: %s", err)
 	}
-	fmt.Printf("Device information: %+v\n", di)
+	diJson, err := json.MarshalIndent(di, "", "    ")
+	if err != nil {
+		log.Fatalf("Could not marshal JSON: %s", err)
+	}
+	fmt.Printf("Device information: %s\n", diJson)
 
 	resp, err := http.Get("https://api.center.mudita.com/.netlify/functions/v2-get-release?product=BellHybrid&environment=production&version=latest")
 	if err != nil {
@@ -171,7 +175,6 @@ func main() {
 	bar := progressbar.DefaultBytes(int64(len(update)), "Uploading")
 	chunks := (len(update) + uploadResp.ChunkSize - 1) / uploadResp.ChunkSize
 	for i := 0; i < chunks; i++ {
-		err = bar.Add(uploadResp.ChunkSize)
 		if err != nil {
 			log.Fatalf("Error updating progress bar: %s", err)
 		}
@@ -180,6 +183,7 @@ func main() {
 			end = len(update)
 		}
 		chunk := update[i*uploadResp.ChunkSize : end]
+		err = bar.Add(len(chunk))
 		err = request(port, map[string]interface{}{
 			"endpoint": 3,
 			"method":   3,
