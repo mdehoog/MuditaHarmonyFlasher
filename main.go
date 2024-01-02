@@ -272,6 +272,10 @@ func request(port serial.Port, timeout time.Duration, payload map[string]interfa
 	if err != nil {
 		return err
 	}
+	err = port.Drain()
+	if err != nil {
+		return err
+	}
 	buffer := make([]byte, 10)
 	_, err = io.ReadFull(port, buffer)
 	if err != nil {
